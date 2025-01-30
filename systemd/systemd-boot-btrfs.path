@@ -1,0 +1,9 @@
+[Unit]
+Description=Systemd-boot btrfs service monitoring /.snapshots/
+
+[Path]
+PathChanged=/.snapshots/
+Unit=systemd-boot-btrfs.servive
+
+[Install]
+WantedBy=multi-user.target

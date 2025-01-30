@@ -1,0 +1,12 @@
+[Unit]
+Description=Systemd-boot btrfs service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /usr/local/bin/systemd-boot-btrfs
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

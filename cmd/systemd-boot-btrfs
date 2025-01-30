@@ -1,0 +1,54 @@
+
+#!/usr/bin/env bash
+
+# check if initramfs is there
+if [ ! "$(find /boot/* -maxdepth 1 -name 'initramfs-linux.img')" ]; then
+    echo "initramfs-linux.img is missing!"
+    exit
+fi
+
+# check directory
+boot_path=/boot/loader/entries
+if [ ! -d $boot_path ]; then
+    echo "$boot_path does not exist."
+    exit
+fi
+
+# get main .conf file
+boot_main_cfg=$(ls -f /boot/loader/entries/ | grep 'main')
+if [[ ! "$boot_main_cfg" ]]; then
+    boot_main_cfg=$(ls -tU -f /boot/loader/entries/ | grep '.conf' | awk 'NR==1 {print $1}')
+fi
+
+if [[ ! "$boot_main_cfg" ]]; then
+    echo "could not find main-***.conf or oldest lead file."
+    exit
+fi
+
+# check bootloader
+if [ ! "$(find /boot -name 'systemd*.efi')" ]; then
+    echo "systemd-boot is not your default boot loader."
+fi
+
+# delete current snapshot .conf
+boot_snap_name=arch-snapshot-
+boot_snap_end=.conf
+find $boot_path -type f -name "$boot_snap_name*$boot_snap_end" -delete
+
+snapshots_path=/.snapshots
+snapshots_inputs=$(find $snapshots_path/* -maxdepth 1 -type f -name 'info.xml')
+read_info_xml() {
+    for i in $1; do
+
+        title=$(awk -F'[<>]' '/<num>|type|date|description/{printf $3OFS} END {print ""}' $i)
+        snap_title="Arch Linux Snapshot: $title"
+        number=$(echo $title | awk '{print $2}')
+        snap_subvol=$(echo $1 | sed -e 's|\/\.|@|' -e 's|info\.xml|snapshot|')
+        snap_cfg="$boot_path/$boot_snap_name$number$boot_snap_end"
+
+        sed -e "1 s|title\s.*|title $snap_title|" -e "5 s|rootflags=subvol=[\/@a-zA-Z0-9]\s|rootflags=subvol=$snap_subvol |" "$boot_path/$boot_main_cfg" >$snap_cfg
+    done | column -t
+}
+for si in $snapshots_inputs; do
+    read_info_xml $si
+done
