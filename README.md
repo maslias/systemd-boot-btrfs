@@ -1,6 +1,6 @@
 ## Whait is Systemd-boot-btrfs?
 
-Systemd-boot-btrfs is a primitive systemd.service unit that creates /boot/loader/entries/arch-snapshots-\*.conf files for each btrfs snapshot that is located in /.snapshots.
+Systemd-boot-btrfs is a primitive systemd unit that creates automatically boot entry files /boot/loader/entries/arch-snapshots-\*.conf for systemd-boot, from each btrfs snapshot that is located in /.snapshots.
 It concludes a systemd.path unit to watch /.snapshots for any changes to trigger the service.
 
 ## Install
