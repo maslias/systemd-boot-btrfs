@@ -6,7 +6,7 @@ It concludes a systemd.path unit to watch /.snapshots for any changes to trigger
 ## Install
 
 ```bash
-git https://github.com/maslias/systemd-boot-btrfs.git
+git clone https://github.com/maslias/systemd-boot-btrfs.git
 cd ./systemd-boot-btrfs
 sudo ./install.sh
 ```

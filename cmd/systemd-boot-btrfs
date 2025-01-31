@@ -25,6 +25,15 @@ if [[ ! "$boot_main_cfg" ]]; then
     exit
 fi
 
+
+
+
+if [[ ! $(grep -i 'rootflags=' "$boot_path/$boot_main_cfg") ]] ; then
+    echo "your main boot entry file missing the option 'rootflags'"
+    exit
+fi
+
+
 # check bootloader
 if [ ! "$(find /boot -name 'systemd*.efi')" ]; then
     echo "systemd-boot is not your default boot loader."
@@ -34,6 +43,15 @@ fi
 boot_snap_name=arch-snapshot-
 boot_snap_end=.conf
 find $boot_path -type f -name "$boot_snap_name*$boot_snap_end" -delete
+boot_path_file_count=$(ls -1 $boot_path | wc -l)
+
+
+sed_check=$(grep -n -E 'title|sort-key|options'  "$boot_path/$boot_main_cfg" | cut -d " "  -f 1)
+
+sed_row_title=$(echo $sed_check | grep -i -E -o '[0-9]+:title' | cut -d : -f 1)
+sed_row_sort=$(echo $sed_check | grep -i -E -o '[0-9]+:sort-key' | cut -d : -f 1)
+sed_row_options=$(echo $sed_check | grep -i -E -o '[0-9]+:options' | cut -d : -f 1)
+
 
 snapshots_path=/.snapshots
 snapshots_inputs=$(find $snapshots_path/* -maxdepth 1 -type f -name 'info.xml')
@@ -43,10 +61,16 @@ read_info_xml() {
         title=$(awk -F'[<>]' '/<num>|type|date|description/{printf $3OFS} END {print ""}' $i)
         snap_title="Arch Linux Snapshot: $title"
         number=$(echo $title | awk '{print $2}')
+
+        number=$(($number +$boot_path_file_count))
+        if [[ ${#number} < 2 ]] ; then
+            number="0$number"
+        fi
+
         snap_subvol=$(echo $1 | sed -e 's|\/\.|@|' -e 's|info\.xml|snapshot|')
         snap_cfg="$boot_path/$boot_snap_name$number$boot_snap_end"
 
-        sed -e "1 s|title\s.*|title $snap_title|" -e "5 s|rootflags=subvol=[\/@a-zA-Z0-9]\s|rootflags=subvol=$snap_subvol |" "$boot_path/$boot_main_cfg" >$snap_cfg
+        sed -e "$sed_row_title s|title\s.*|title $snap_title|" -e "$sed_row_sort s|sort-key\s.*|sort-key $number|" -e "$sed_row_options s|rootflags=subvol=[\/@a-zA-Z0-9]\s|rootflags=subvol=$snap_subvol |" "$boot_path/$boot_main_cfg" >$snap_cfg
     done | column -t
 }
 for si in $snapshots_inputs; do
